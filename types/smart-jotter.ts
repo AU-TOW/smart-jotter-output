@@ -1,3 +1,4 @@
+// Types for Smart Jotter components
 export interface ParsedBookingData {
   customer_name?: string;
   phone?: string;
@@ -17,21 +18,30 @@ export interface FieldConfidence {
   issue?: number;
 }
 
-export interface JotterPreviewProps {
-  data: ParsedBookingData;
-  fieldConfidence?: FieldConfidence;
-  onDataChange: (updatedData: ParsedBookingData) => void;
-  onCreateBooking: (data: ParsedBookingData) => void;
-  onCreateEstimate: (data: ParsedBookingData) => void;
-  isLoading?: boolean;
+export interface OCRResponse {
+  text: string;
+  confidence: number;
+  error?: string;
 }
 
-export interface EditableFieldProps {
-  label: string;
-  value: string;
-  placeholder: string;
-  confidence?: number;
-  onChange: (value: string) => void;
-  type?: 'text' | 'tel' | 'textarea';
-  required?: boolean;
+export interface ParseResponse {
+  parsedData: ParsedBookingData;
+  fieldConfidences?: FieldConfidence;
+  error?: string;
+}
+
+export interface SmartJotterState {
+  mode: 'canvas' | 'text';
+  rawText: string;
+  parsedData: ParsedBookingData | null;
+  fieldConfidences?: FieldConfidence;
+  isProcessing: boolean;
+  error: string | null;
+}
+
+export interface CanvasData {
+  image: string;
+  strokes?: any[];
+  width: number;
+  height: number;
 }
