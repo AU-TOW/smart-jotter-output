@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for Smart Jotter */
+.signature-canvas {
+  cursor: crosshair;
+}
+
+.signature-canvas:active {
+  cursor: grabbing;
+}
+
+/* Prevent text selection on canvas controls */
+.canvas-controls button {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth transitions for mode switching */
+.mode-selector button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .signature-canvas {
+    touch-action: none;
+  }
+  
+  .canvas-controls {
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .canvas-controls button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+}
+
+/* Focus styles for better accessibility */
+.signature-canvas:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+textarea:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

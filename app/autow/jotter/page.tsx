@@ -1,23 +1,27 @@
+import React from 'react';
 import SmartJotter from '@/components/smart-jotter/SmartJotter';
+import { ParsedBookingData } from '@/types/smart-jotter';
 
 export default function JotterPage() {
+  // Handle booking creation
+  const handleBookingCreate = (data: ParsedBookingData) => {
+    console.log('Creating booking with data:', data);
+    // TODO: Implement booking creation logic
+  };
+
+  // Handle estimate creation
+  const handleEstimateCreate = (data: ParsedBookingData) => {
+    console.log('Creating estimate with data:', data);
+    // TODO: Implement estimate creation logic
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Smart Jotter
-              </h1>
-              <p className="text-gray-600">
-                Enter customer details and vehicle information for quick booking creation
-              </p>
-            </div>
-            
-            <SmartJotter />
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <SmartJotter 
+          onBookingCreate={handleBookingCreate}
+          onEstimateCreate={handleEstimateCreate}
+        />
       </div>
     </div>
   );

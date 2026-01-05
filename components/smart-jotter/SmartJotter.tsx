@@ -1,180 +1,175 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import HandwritingCanvas from './HandwritingCanvas';
 import TextInput from './TextInput';
-import { ParsedBookingData } from '@/types/smart-jotter';
-
-interface SmartJotterProps {
-  onBookingCreate?: (data: ParsedBookingData) => void;
-  onEstimateCreate?: (data: ParsedBookingData) => void;
-}
+import { SmartJotterProps, CanvasData, InputMode } from '@/types/smart-jotter';
 
 const SmartJotter: React.FC<SmartJotterProps> = ({
   onBookingCreate,
-  onEstimateCreate
+  onEstimateCreate,
+  className = ''
 }) => {
-  const [inputMode, setInputMode] = useState<'text' | 'canvas'>('text');
-  const [inputData, setInputData] = useState<string>('');
-  const [parsedData, setParsedData] = useState<ParsedBookingData | null>(null);
+  // State management
+  const [currentMode, setCurrentMode] = useState<InputMode['type']>('canvas');
+  const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
+  const [textData, setText] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleInputChange = (data: string) => {
-    setInputData(data);
-    // Reset parsed data when input changes
-    if (parsedData) {
-      setParsedData(null);
-    }
-  };
+  // Input modes configuration
+  const inputModes: InputMode[] = [
+    { type: 'canvas', label: 'Handwriting', icon: '✍️' },
+    { type: 'text', label: 'Type Text', icon: '⌨️' }
+  ];
 
-  const handleProcess = async () => {
-    if (!inputData.trim()) {
-      return;
-    }
+  // Handle canvas data changes
+  const handleCanvasDataChange = useCallback((data: CanvasData | null) => {
+    setCanvasData(data);
+  }, []);
 
+  // Handle text data changes
+  const handleTextDataChange = useCallback((text: string) => {
+    setText(text);
+  }, []);
+
+  // Switch between input modes
+  const switchMode = useCallback((mode: InputMode['type']) => {
+    setCurrentMode(mode);
+    // Clear data when switching modes
+    setCanvasData(null);
+    setText('');
+  }, []);
+
+  // Check if we have any input data
+  const hasData = currentMode === 'canvas' ? canvasData !== null : text.trim().length > 0;
+
+  // Process the input data (placeholder for OCR/parsing)
+  const processInput = useCallback(async () => {
+    if (!hasData) return;
+    
     setIsProcessing(true);
+    
     try {
-      // TODO: Implement API call to parse text
-      // For now, simulate processing delay
+      // TODO: Implement actual OCR and parsing logic
+      console.log('Processing input:', currentMode === 'canvas' ? canvasData : textData);
+      
+      // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock parsed data - will be replaced with actual API call
-      const mockParsedData: ParsedBookingData = {
+      // Mock parsed data
+      const mockParsedData = {
         customer_name: "John Smith",
         phone: "07712345678",
         vehicle: "Ford Focus",
         year: "2018",
         registration: "YA19 ABC",
-        issue: "Engine warning light",
-        confidence_score: 0.95
+        issue: "Engine warning light"
       };
       
-      setParsedData(mockParsedData);
+      console.log('Parsed data:', mockParsedData);
+      
     } catch (error) {
       console.error('Error processing input:', error);
-      // TODO: Add proper error handling
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [hasData, currentMode, canvasData, textData]);
 
   return (
-    <div className="space-y-6">
-      {/* Input Mode Toggle */}
-      <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setInputMode('text')}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
-            inputMode === 'text'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Text Input
-        </button>
-        <button
-          onClick={() => setInputMode('canvas')}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
-            inputMode === 'canvas'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-          disabled
-        >
-          Handwriting (Coming Soon)
-        </button>
+    <div className={`smart-jotter-container max-w-4xl mx-auto p-6 ${className}`}>
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Smart Jotter
+        </h1>
+        <p className="text-gray-600">
+          Capture booking details with handwriting or text input
+        </p>
+      </div>
+
+      {/* Mode Selector */}
+      <div className="mode-selector mb-6">
+        <div className="flex justify-center">
+          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+            {inputModes.map((mode) => (
+              <button
+                key={mode.type}
+                onClick={() => switchMode(mode.type)}
+                disabled={isProcessing}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  currentMode === mode.type
+                    ? 'bg-white shadow-sm text-blue-600 border border-blue-200'
+                    : 'text-gray-600 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <span>{mode.icon}</span>
+                <span>{mode.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Input Section */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        {inputMode === 'text' ? (
-          <TextInput
-            value={inputData}
-            onChange={handleInputChange}
-            onSubmit={handleProcess}
-            isLoading={isProcessing}
+      <div className="input-section mb-6">
+        {currentMode === 'canvas' ? (
+          <HandwritingCanvas 
+            onDataChange={handleCanvasDataChange}
+            isProcessing={isProcessing}
           />
         ) : (
-          <div className="text-center py-12 text-gray-500">
-            <p>Canvas input mode coming soon...</p>
-          </div>
+          <TextInput 
+            onDataChange={handleTextDataChange}
+            isProcessing={isProcessing}
+          />
         )}
       </div>
 
-      {/* Processing Status */}
-      {isProcessing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-            <p className="text-blue-700">Processing your input...</p>
-          </div>
+      {/* Action Buttons */}
+      <div className="action-section">
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={processInput}
+            disabled={!hasData || isProcessing}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <span>🔍</span>
+                <span>Process & Extract Data</span>
+              </>
+            )}
+          </button>
         </div>
-      )}
-
-      {/* Parsed Data Preview */}
-      {parsedData && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-green-800 mb-4">
-            Extracted Information
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Name
-              </label>
-              <p className="text-gray-900">{parsedData.customer_name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
-              </label>
-              <p className="text-gray-900">{parsedData.phone}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vehicle
-              </label>
-              <p className="text-gray-900">{parsedData.vehicle} ({parsedData.year})</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Registration
-              </label>
-              <p className="text-gray-900">{parsedData.registration}</p>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Issue Description
-              </label>
-              <p className="text-gray-900">{parsedData.issue}</p>
-            </div>
-          </div>
-
-          {/* Confidence Score */}
-          {parsedData.confidence_score && (
-            <div className="mt-4 pt-4 border-t border-green-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Confidence Score</span>
-                <span className="text-sm font-medium text-green-700">
-                  {Math.round(parsedData.confidence_score * 100)}%
-                </span>
-              </div>
-            </div>
+        
+        {/* Data Status */}
+        <div className="text-center mt-4 text-sm text-gray-600">
+          {hasData ? (
+            <span className="text-green-600">
+              ✅ {currentMode === 'canvas' ? 'Handwriting' : 'Text'} data ready
+            </span>
+          ) : (
+            <span>
+              Please {currentMode === 'canvas' ? 'draw' : 'type'} your booking details above
+            </span>
           )}
+        </div>
+      </div>
 
-          {/* Action Buttons */}
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => onBookingCreate?.(parsedData)}
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
-            >
-              Create Booking
-            </button>
-            <button
-              onClick={() => onEstimateCreate?.(parsedData)}
-              className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 transition-colors"
-            >
-              Create Estimate
-            </button>
+      {/* Debug Info (Development only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="debug-section mt-8 p-4 bg-gray-100 rounded-lg">
+          <h3 className="font-medium text-gray-900 mb-2">Debug Information:</h3>
+          <div className="text-sm text-gray-600 space-y-1">
+            <div>Current Mode: {currentMode}</div>
+            <div>Has Canvas Data: {canvasData !== null ? 'Yes' : 'No'}</div>
+            <div>Text Length: {textData.length} characters</div>
+            <div>Processing: {isProcessing ? 'Yes' : 'No'}</div>
           </div>
         </div>
       )}
