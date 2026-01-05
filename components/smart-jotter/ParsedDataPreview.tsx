@@ -23,7 +23,8 @@ const ParsedDataPreview: React.FC<ParsedDataPreviewProps> = ({
 
   const getFieldValue = (key: keyof ParsedBookingData): string => {
     const value = data[key];
-    return value || 'Not provided';
+    if (value === undefined || value === null) return 'Not provided';
+    return String(value);
   };
 
   const hasRequiredData = () => {

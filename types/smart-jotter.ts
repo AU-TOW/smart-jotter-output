@@ -6,7 +6,28 @@ export interface ParsedBookingData {
   year?: string;
   registration?: string;
   issue?: string;
+  notes?: string;
   confidence_score?: number;
+}
+
+export type ProcessingStep = 'input' | 'ocr' | 'parsing' | 'preview' | 'error' | 'processing';
+
+export interface HandwritingCanvasProps {
+  onDataChange: (data: CanvasData) => void;
+  isDisabled?: boolean;
+  isProcessing?: boolean;
+  className?: string;
+}
+
+export interface ParseApiRequest {
+  text: string;
+}
+
+export interface ParseApiResponse {
+  success: boolean;
+  data?: ParsedBookingData;
+  error?: string;
+  mock?: boolean;
 }
 
 export interface FieldConfidence {
@@ -44,4 +65,5 @@ export interface CanvasData {
   strokes?: any[];
   width: number;
   height: number;
+  isEmpty?: boolean;
 }
