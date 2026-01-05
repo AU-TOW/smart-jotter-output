@@ -1,37 +1,47 @@
-// TypeScript types for the Smart Jotter feature
-
+// Types for Smart Jotter components
 export interface ParsedBookingData {
-  customer_name: string | null;
-  phone: string | null;
-  vehicle: string | null;
-  year: string | null;
-  registration: string | null;
-  issue: string | null;
-  notes: string | null;
+  customer_name?: string;
+  phone?: string;
+  vehicle?: string;
+  year?: string;
+  registration?: string;
+  issue?: string;
   confidence_score?: number;
 }
 
-export interface ParseApiResponse {
-  success: boolean;
-  data: ParsedBookingData;
-  mock: boolean;
-  message?: string;
-  error?: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+export interface FieldConfidence {
+  customer_name?: number;
+  phone?: number;
+  vehicle?: number;
+  year?: number;
+  registration?: number;
+  issue?: number;
 }
 
-export interface ParseApiRequest {
+export interface OCRResponse {
   text: string;
+  confidence: number;
+  error?: string;
+}
+
+export interface ParseResponse {
+  parsedData: ParsedBookingData;
+  fieldConfidences?: FieldConfidence;
+  error?: string;
 }
 
 export interface SmartJotterState {
+  mode: 'canvas' | 'text';
   rawText: string;
   parsedData: ParsedBookingData | null;
-  isLoading: boolean;
+  fieldConfidences?: FieldConfidence;
+  isProcessing: boolean;
   error: string | null;
-  isMocked: boolean;
+}
+
+export interface CanvasData {
+  image: string;
+  strokes?: any[];
+  width: number;
+  height: number;
 }
