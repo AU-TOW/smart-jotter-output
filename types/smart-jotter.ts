@@ -1,5 +1,3 @@
-// TypeScript interfaces for Smart Jotter functionality
-
 export interface ParsedBookingData {
   customer_name: string;
   phone: string;
@@ -13,58 +11,39 @@ export interface ParsedBookingData {
 export interface OCRResponse {
   text: string;
   confidence: number;
-  success: boolean;
   error?: string;
 }
 
 export interface ParseResponse {
-  data: ParsedBookingData;
+  parsedData: ParsedBookingData;
   confidence: number;
-  success: boolean;
   error?: string;
-  raw_text?: string;
 }
 
-export interface SmartJotterState {
-  inputMode: 'text' | 'handwrite';
-  textInput: string;
-  canvasData: string | null;
-  isProcessing: boolean;
-  parsedData: ParsedBookingData | null;
-  error: string | null;
-  ocrResult: string | null;
+export interface SmartJotterProps {
+  onBookingCreate?: (data: ParsedBookingData) => void;
+  onEstimateCreate?: (data: ParsedBookingData) => void;
 }
 
-export interface CanvasStroke {
-  points: Array<{
-    x: number;
-    y: number;
-    time: number;
-  }>;
-  color: string;
-  width: number;
+export interface TextInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  isLoading?: boolean;
+  maxLength?: number;
+  placeholder?: string;
 }
 
-export interface HandwritingData {
-  image: string; // Base64 encoded image
-  strokes?: CanvasStroke[];
-  width: number;
-  height: number;
-  timestamp: number;
+export interface CanvasInputProps {
+  onDataChange: (data: string) => void;
+  onSubmit: () => void;
+  isLoading?: boolean;
 }
 
-export interface MyScriptConfig {
-  apiKey: string;
-  hmacKey: string;
-  endpoint: string;
-  applicationKey: string;
-}
-
-export interface OpenAIParsingPrompt {
-  system: string;
-  user: string;
-  examples: Array<{
-    input: string;
-    output: ParsedBookingData;
-  }>;
+// API Response types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }
