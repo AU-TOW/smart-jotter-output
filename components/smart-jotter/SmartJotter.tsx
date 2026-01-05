@@ -1,176 +1,193 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import HandwritingCanvas from './HandwritingCanvas';
-import TextInput from './TextInput';
-import { SmartJotterProps, CanvasData, InputMode } from '@/types/smart-jotter';
+import { ParsedBookingData, OCRResponse, ProcessingStep } from '@/types/smart-jotter';
+import InputSection from './InputSection';
+import ProcessingStatus from './ProcessingStatus';
+import ParsedDataPreview from './ParsedDataPreview';
+import ActionButtons from './ActionButtons';
+import { useRouter } from 'next/navigation';
+
+interface SmartJotterProps {
+  onBookingCreate?: (data: ParsedBookingData) => void;
+  onEstimateCreate?: (data: ParsedBookingData) => void;
+}
 
 const SmartJotter: React.FC<SmartJotterProps> = ({
   onBookingCreate,
   onEstimateCreate,
-  className = ''
 }) => {
-  // State management
-  const [currentMode, setCurrentMode] = useState<InputMode['type']>('canvas');
-  const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
-  const [textData, setText] = useState<string>('');
+  const router = useRouter();
+  const [inputType, setInputType] = useState<'canvas' | 'text'>('canvas');
+  const [inputData, setInputData] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState<ProcessingStep>('input');
+  const [error, setError] = useState<string>('');
+  const [parsedData, setParsedData] = useState<ParsedBookingData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Input modes configuration
-  const inputModes: InputMode[] = [
-    { type: 'canvas', label: 'Handwriting', icon: '✍️' },
-    { type: 'text', label: 'Type Text', icon: '⌨️' }
-  ];
-
-  // Handle canvas data changes
-  const handleCanvasDataChange = useCallback((data: CanvasData | null) => {
-    setCanvasData(data);
-  }, []);
-
-  // Handle text data changes
-  const handleTextDataChange = useCallback((text: string) => {
-    setText(text);
-  }, []);
-
-  // Switch between input modes
-  const switchMode = useCallback((mode: InputMode['type']) => {
-    setCurrentMode(mode);
-    // Clear data when switching modes
-    setCanvasData(null);
-    setText('');
-  }, []);
-
-  // Check if we have any input data
-  const hasData = currentMode === 'canvas' ? canvasData !== null : text.trim().length > 0;
-
-  // Process the input data (placeholder for OCR/parsing)
-  const processInput = useCallback(async () => {
-    if (!hasData) return;
-    
-    setIsProcessing(true);
-    
+  const processInput = useCallback(async (data: string, type: 'canvas' | 'text') => {
     try {
-      // TODO: Implement actual OCR and parsing logic
-      console.log('Processing input:', currentMode === 'canvas' ? canvasData : textData);
+      setIsProcessing(true);
+      setError('');
+      setCurrentStep('processing');
+
+      let textToProcess = data;
+
+      // If canvas input, perform OCR first
+      if (type === 'canvas') {
+        setCurrentStep('ocr');
+        
+        const ocrResponse = await fetch('/api/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageData: data }),
+        });
+
+        if (!ocrResponse.ok) {
+          throw new Error('OCR processing failed');
+        }
+
+        const ocrResult: OCRResponse = await ocrResponse.json();
+        textToProcess = ocrResult.text;
+
+        if (!textToProcess.trim()) {
+          throw new Error('No text could be extracted from the handwriting');
+        }
+      }
+
+      // Parse the text with AI
+      setCurrentStep('parsing');
       
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const parseResponse = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToProcess }),
+      });
+
+      if (!parseResponse.ok) {
+        throw new Error('Text parsing failed');
+      }
+
+      const parseResult = await parseResponse.json();
       
-      // Mock parsed data
-      const mockParsedData = {
-        customer_name: "John Smith",
-        phone: "07712345678",
-        vehicle: "Ford Focus",
-        year: "2018",
-        registration: "YA19 ABC",
-        issue: "Engine warning light"
-      };
+      if (!parseResult.success) {
+        throw new Error(parseResult.error || 'Failed to parse booking data');
+      }
+
+      setParsedData(parseResult.data);
+      setCurrentStep('preview');
       
-      console.log('Parsed data:', mockParsedData);
-      
-    } catch (error) {
-      console.error('Error processing input:', error);
+    } catch (err) {
+      console.error('Processing error:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setCurrentStep('error');
     } finally {
       setIsProcessing(false);
     }
-  }, [hasData, currentMode, canvasData, textData]);
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (!inputData.trim()) {
+      setError('Please provide some input before processing');
+      return;
+    }
+
+    processInput(inputData, inputType);
+  }, [inputData, inputType, processInput]);
+
+  const handleCreateBooking = useCallback(() => {
+    if (!parsedData) return;
+
+    try {
+      // Create URL search params with the parsed data
+      const params = new URLSearchParams({
+        customer_name: parsedData.customer_name || '',
+        phone: parsedData.phone || '',
+        vehicle: parsedData.vehicle || '',
+        year: parsedData.year || '',
+        registration: parsedData.registration || '',
+        issue: parsedData.issue || '',
+        from_jotter: 'true'
+      });
+
+      // Navigate to booking form with pre-filled data
+      router.push(`/autow/booking?${params.toString()}`);
+
+      // Call the callback if provided
+      onBookingCreate?.(parsedData);
+    } catch (err) {
+      console.error('Error creating booking:', err);
+      setError('Failed to create booking. Please try again.');
+    }
+  }, [parsedData, router, onBookingCreate]);
+
+  const handleCreateEstimate = useCallback(() => {
+    if (!parsedData) return;
+
+    // Future feature - currently shows message
+    setError('Estimate creation feature is coming soon!');
+    
+    // Call the callback if provided
+    onEstimateCreate?.(parsedData);
+  }, [parsedData, onEstimateCreate]);
+
+  const resetForm = useCallback(() => {
+    setInputData('');
+    setParsedData(null);
+    setCurrentStep('input');
+    setError('');
+    setIsProcessing(false);
+  }, []);
 
   return (
-    <div className={`smart-jotter-container max-w-4xl mx-auto p-6 ${className}`}>
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Smart Jotter
-        </h1>
-        <p className="text-gray-600">
-          Capture booking details with handwriting or text input
-        </p>
-      </div>
-
-      {/* Mode Selector */}
-      <div className="mode-selector mb-6">
-        <div className="flex justify-center">
-          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-            {inputModes.map((mode) => (
-              <button
-                key={mode.type}
-                onClick={() => switchMode(mode.type)}
-                disabled={isProcessing}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
-                  currentMode === mode.type
-                    ? 'bg-white shadow-sm text-blue-600 border border-blue-200'
-                    : 'text-gray-600 hover:text-gray-900'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <span>{mode.icon}</span>
-                <span>{mode.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* Input Section */}
-      <div className="input-section mb-6">
-        {currentMode === 'canvas' ? (
-          <HandwritingCanvas 
-            onDataChange={handleCanvasDataChange}
-            isProcessing={isProcessing}
-          />
-        ) : (
-          <TextInput 
-            onDataChange={handleTextDataChange}
-            isProcessing={isProcessing}
-          />
-        )}
-      </div>
+      {(currentStep === 'input' || currentStep === 'error') && (
+        <InputSection
+          inputType={inputType}
+          onInputTypeChange={setInputType}
+          onInputChange={setInputData}
+          onSubmit={handleSubmit}
+          isDisabled={isProcessing}
+          error={error}
+        />
+      )}
+
+      {/* Processing Status */}
+      {isProcessing && (
+        <ProcessingStatus
+          currentStep={currentStep}
+          error={error}
+        />
+      )}
+
+      {/* Parsed Data Preview */}
+      {currentStep === 'preview' && parsedData && (
+        <ParsedDataPreview
+          data={parsedData}
+          onEdit={() => setCurrentStep('input')}
+        />
+      )}
 
       {/* Action Buttons */}
-      <div className="action-section">
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={processInput}
-            disabled={!hasData || isProcessing}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <span>🔍</span>
-                <span>Process & Extract Data</span>
-              </>
-            )}
-          </button>
-        </div>
-        
-        {/* Data Status */}
-        <div className="text-center mt-4 text-sm text-gray-600">
-          {hasData ? (
-            <span className="text-green-600">
-              ✅ {currentMode === 'canvas' ? 'Handwriting' : 'Text'} data ready
-            </span>
-          ) : (
-            <span>
-              Please {currentMode === 'canvas' ? 'draw' : 'type'} your booking details above
-            </span>
-          )}
-        </div>
-      </div>
+      {currentStep === 'preview' && parsedData && (
+        <ActionButtons
+          onCreateBooking={handleCreateBooking}
+          onCreateEstimate={handleCreateEstimate}
+          onStartOver={resetForm}
+          isEstimateDisabled={true}
+        />
+      )}
 
-      {/* Debug Info (Development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="debug-section mt-8 p-4 bg-gray-100 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-2">Debug Information:</h3>
-          <div className="text-sm text-gray-600 space-y-1">
-            <div>Current Mode: {currentMode}</div>
-            <div>Has Canvas Data: {canvasData !== null ? 'Yes' : 'No'}</div>
-            <div>Text Length: {textData.length} characters</div>
-            <div>Processing: {isProcessing ? 'Yes' : 'No'}</div>
-          </div>
+      {/* Error State with Reset Option */}
+      {currentStep === 'error' && (
+        <div className="text-center pt-4">
+          <button
+            onClick={resetForm}
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+          >
+            Start Over
+          </button>
         </div>
       )}
     </div>
