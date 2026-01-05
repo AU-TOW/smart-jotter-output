@@ -1,157 +1,160 @@
 'use client';
 
 import React, { useState } from 'react';
-import JotterPreview from '@/components/smart-jotter/JotterPreview';
-import { ParsedBookingData, FieldConfidence } from '@/types/smart-jotter';
+import JotterPreview from '../../../../components/smart-jotter/JotterPreview';
+import { ParsedBookingData, FieldConfidence } from '../../../../types/smart-jotter';
 
-const PreviewDemoPage: React.FC = () => {
-  // Sample parsed data with varying completeness
-  const [sampleData, setSampleData] = useState<ParsedBookingData>({
-    customer_name: "John Smith",
-    phone: "07712345678",
-    vehicle: "Ford Focus",
-    year: "2018",
-    registration: "YA19 ABC",
-    issue: "Engine warning light comes on intermittently, especially when accelerating",
-    confidence_score: 0.85
-  });
+// Demo data for testing
+const sampleData: ParsedBookingData = {
+  customer_name: 'John Smith',
+  phone: '07712345678',
+  vehicle: 'Ford Focus',
+  year: '2018',
+  registration: 'YA19 ABC',
+  issue: 'Engine warning light is on, car making strange noise when accelerating',
+  confidence_score: 0.85
+};
 
-  // Sample confidence scores
-  const [fieldConfidence] = useState<FieldConfidence>({
-    customer_name: 0.95,
-    phone: 0.88,
-    vehicle: 0.92,
-    year: 0.75,
-    registration: 0.98,
-    issue: 0.82
-  });
+const sampleConfidences: FieldConfidence = {
+  customer_name: 0.95,
+  phone: 0.90,
+  vehicle: 0.88,
+  year: 0.92,
+  registration: 0.85,
+  issue: 0.75
+};
 
-  const [isLoading, setIsLoading] = useState(false);
+const incompleteData: ParsedBookingData = {
+  customer_name: 'Jane Doe',
+  phone: '07798765432',
+  vehicle: '',
+  year: '',
+  registration: 'BD21 XYZ',
+  issue: 'Brake issues'
+};
 
-  // Handle data changes from the preview component
-  const handleDataChange = (updatedData: ParsedBookingData) => {
-    setSampleData(updatedData);
-    console.log('Data updated:', updatedData);
-  };
+const lowConfidenceData: ParsedBookingData = {
+  customer_name: 'Bob Wilson',
+  phone: '0771234567',
+  vehicle: 'Toyota Corolla',
+  year: '2019',
+  registration: 'CX20 DEF',
+  issue: 'Oil leak'
+};
 
-  // Handle booking creation
-  const handleCreateBooking = async (data: ParsedBookingData) => {
-    setIsLoading(true);
-    console.log('Creating booking with data:', data);
+const lowConfidences: FieldConfidence = {
+  customer_name: 0.60,
+  phone: 0.45,
+  vehicle: 0.70,
+  year: 0.80,
+  registration: 0.55,
+  issue: 0.65
+};
+
+export default function PreviewDemoPage() {
+  const [selectedDemo, setSelectedDemo] = useState<'complete' | 'incomplete' | 'low-confidence' | 'empty'>('complete');
+  const [currentData, setCurrentData] = useState<ParsedBookingData>(sampleData);
+  const [currentConfidences, setCurrentConfidences] = useState<FieldConfidence>(sampleConfidences);
+
+  const handleDemoChange = (demo: 'complete' | 'incomplete' | 'low-confidence' | 'empty') => {
+    setSelectedDemo(demo);
     
-    // Simulate API call
-    setTimeout(() => {
-      alert('Booking created successfully!');
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  // Handle estimate creation
-  const handleCreateEstimate = async (data: ParsedBookingData) => {
-    setIsLoading(true);
-    console.log('Creating estimate with data:', data);
-    
-    // Simulate API call
-    setTimeout(() => {
-      alert('Estimate created successfully!');
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  // Sample data presets for testing
-  const samplePresets = {
-    complete: {
-      customer_name: "John Smith",
-      phone: "07712345678",
-      vehicle: "Ford Focus",
-      year: "2018",
-      registration: "YA19 ABC",
-      issue: "Engine warning light comes on intermittently",
-      confidence_score: 0.85
-    },
-    partial: {
-      customer_name: "Jane Doe",
-      phone: "07798765432",
-      issue: "Strange noise from engine",
-      confidence_score: 0.62
-    },
-    minimal: {
-      customer_name: "Bob Wilson",
-      phone: "",
-      issue: "Car won't start",
-      confidence_score: 0.45
-    },
-    empty: {
-      confidence_score: 0.1
+    switch (demo) {
+      case 'complete':
+        setCurrentData(sampleData);
+        setCurrentConfidences(sampleConfidences);
+        break;
+      case 'incomplete':
+        setCurrentData(incompleteData);
+        setCurrentConfidences({});
+        break;
+      case 'low-confidence':
+        setCurrentData(lowConfidenceData);
+        setCurrentConfidences(lowConfidences);
+        break;
+      case 'empty':
+        setCurrentData({});
+        setCurrentConfidences({});
+        break;
     }
   };
 
+  const handleDataChange = (updatedData: ParsedBookingData) => {
+    setCurrentData(updatedData);
+    console.log('Data updated:', updatedData);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Page Header */}
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Smart Jotter Preview Demo
+            Jotter Preview Component Demo
           </h1>
           <p className="text-gray-600">
             Test the JotterPreview component with different data scenarios
           </p>
         </div>
 
-        {/* Sample Data Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Test Data Presets</h2>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setSampleData(samplePresets.complete)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Complete Data
-            </button>
-            <button
-              onClick={() => setSampleData(samplePresets.partial)}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-            >
-              Partial Data
-            </button>
-            <button
-              onClick={() => setSampleData(samplePresets.minimal)}
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              Minimal Data
-            </button>
-            <button
-              onClick={() => setSampleData(samplePresets.empty)}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Empty Data
-            </button>
+        {/* Demo Controls */}
+        <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Demo Scenarios</h2>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'complete', label: 'Complete Data (High Confidence)' },
+              { key: 'incomplete', label: 'Incomplete Data' },
+              { key: 'low-confidence', label: 'Low Confidence Data' },
+              { key: 'empty', label: 'Empty Data' }
+            ].map((demo) => (
+              <button
+                key={demo.key}
+                onClick={() => handleDemoChange(demo.key as any)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectedDemo === demo.key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {demo.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Main Preview Component */}
-        <JotterPreview
-          data={sampleData}
-          fieldConfidence={fieldConfidence}
-          onDataChange={handleDataChange}
-          onCreateBooking={handleCreateBooking}
-          onCreateEstimate={handleCreateEstimate}
-          isLoading={isLoading}
-        />
-
-        {/* Debug Information */}
-        <div className="mt-8 bg-gray-800 text-white rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Debug: Current Data State</h3>
-          <pre className="text-sm overflow-x-auto">
-            {JSON.stringify(sampleData, null, 2)}
-          </pre>
+        {/* Preview Component */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="p-6">
+            <JotterPreview
+              parsedData={currentData}
+              fieldConfidences={Object.keys(currentConfidences).length > 0 ? currentConfidences : undefined}
+              onDataChange={handleDataChange}
+            />
+          </div>
         </div>
 
+        {/* Current Data Display */}
+        <div className="mt-6 bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Data State</h3>
+          <div className="bg-gray-50 rounded-md p-4">
+            <pre className="text-sm text-gray-800 overflow-auto">
+              {JSON.stringify({ data: currentData, confidences: currentConfidences }, null, 2)}
+            </pre>
+          </div>
+        </div>
+
+        {/* Usage Instructions */}
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">Usage Instructions</h3>
+          <div className="space-y-2 text-blue-800">
+            <p>• <strong>Inline Editing:</strong> Click the edit icon next to any field to modify its value</p>
+            <p>• <strong>Confidence Indicators:</strong> Green checkmark (80%+), Yellow warning (60-79%), Red warning (&lt;60%)</p>
+            <p>• <strong>Empty Fields:</strong> Shown with placeholder text and gray styling</p>
+            <p>• <strong>Keyboard Shortcuts:</strong> Enter to save, Escape to cancel</p>
+            <p>• <strong>Validation:</strong> Character limits and input types are enforced</p>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-export default PreviewDemoPage;
+}
